@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+
+  <style>
+      .topcorner {position: absolute; top: 0; right: 0; z-index: 99998;}
+
+      .file-preview-big-layer-wrapper {
+          position: absolute;
+          display: none;
+          justify-content: center;
+          align-items: center;
+          top: 0%;
+          width: 100%;
+          height: 100%;
+          z-index: 99999;
+          background-color: rgba(0, 0, 0, 0.8);
+          cursor: pointer;
+      }
+      .file-preview-big-layer {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+      }
+
+      .file-preview-layer {
+          width: 650px;
+          height: 400px;
+          background-color: rgba(0, 0, 0, 0.8);
+          text-align: center;
+      }
+      .origin-preview-image {
+          display: none;
+      }
+
+      .file-preview-image {
+          width: 530px;
+          height: 310px;
+          display: none;
+      }
+
+      .file-preview-close {
+          float: right;
+          width: 60px;
+          cursor: pointer;
+      }
+
+      .file-preview-header {
+          width: 100%;
+          height: 80px;
+      }
+      .file-preview-header span {
+          font-size: 30px;
+          color: #fffdf4;
+          text-align: center;
+          line-height: 80px;
+      }
+
+      .file-preview-name {
+
+          display: inline-block;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 500px;
+      }
+
+      .file-preview-item div {
+          float: left;
+      }
+
+      .file-preview-item .control-button {
+          font-size: 50px;
+          color: #fffdf4;
+          text-align: center;
+          line-height: 310px;
+          float: left;
+          width: 60px;
+          height: 320px;
+      }
+
+  </style>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+  <script>
+    var _previewCurrentImage = {
+      index: 0,
+      id: 0,
+      no: 0,
+      canDownload: false,
+      type: '',
+    }
+
+    var _preview = {
+      preview: function (idx) {
+        var jqPreviewImageDiv = $('#preview-image-div');
+        if (0 >= jqPreviewImageDiv.children().length) {
+          $('.file-preview-image').each(function (idx, val) {
+            $(this).clone()
+              .attr('id', 'slide-' + (idx + 1))
+              .removeClass('origin-preview-image')
+              .addClass('copy-preview-image')
+              .appendTo(jqPreviewImageDiv);
+
+            $('.copy-preview-image').mousedown(function (e) {
+              e.preventDefault();
+
+              //alert(e.which); // 1:좌클릭, 2:휠클릭, 3:우클릭
+              if (e.which == 1) {
+                var jqCloneImage = $(this).clone()
+                  .attr('id', '')
+                  .removeClass('copy-preview-image');
+
+                var layerHeight = (this.naturalHeight > $(document).height()) ? this.naturalHeight : $(document).height();
+                $('.file-preview-big-layer-wrapper').height(layerHeight);
+                jqCloneImage.width(this.naturalWidth).height(this.naturalHeight);
+                _preview.showBigImage(jqCloneImage);
+              }
+            });
+          });
+        }
+
+        $('.copy-preview-image').hide();
+        $('#previewDiv').show();
+        _preview.showImage(idx);
+      },
+      showImage: function (idx) {
+        // 슬라이드 이미지 on
+        var jqTarget = $('#slide-' + idx);
+        $('.file-preview-name').text(jqTarget.data('file-name'));
+        jqTarget.show();
+
+        // 슬라이드 버튼 on/off
+        if ($('.copy-preview-image').length == 1) {
+          $('#prev-button').css('visibility', 'hidden');
+          $('#next-button').css('visibility', 'hidden');
+        } else if (idx <= 1) {
+          $('#prev-button').css('visibility', 'hidden');
+          $('#next-button').css('visibility', 'visible');
+        } else if (idx == $('.copy-preview-image').length) {
+          $('#prev-button').css('visibility', 'visible');
+          $('#next-button').css('visibility', 'hidden');
+        } else {
+          $('#prev-button').css('visibility', 'visible');
+          $('#next-button').css('visibility', 'visible');
+        }
+
+        // 데이터 임시저장
+        _previewCurrentImage.index = idx;
+        _previewCurrentImage.id = jqTarget.data('file-id');
+        _previewCurrentImage.no = jqTarget.data('file-no');
+        _previewCurrentImage.canDownload = jqTarget.data('file-can-download');
+        _previewCurrentImage.type = jqTarget.data('file-type');
+      },
+      prevPreview: function () {
+        var currentIdx = parseInt($('.copy-preview-image:visible').attr('id').replace('slide-', ''));
+        var jqCopyPreviewImage = $('.copy-preview-image');
+
+        $('#next-button').css('visibility', 'visible');
+        if (currentIdx > 1) {
+          jqCopyPreviewImage.hide();
+          $('#previewDiv').show();
+          _preview.showImage((currentIdx - 1));
+        }
+      },
+      nextPreview: function () {
+        var currentIdx = parseInt($('.copy-preview-image:visible').attr('id').replace('slide-', ''));
+        var jqCopyPreviewImage = $('.copy-preview-image');
+
+        $('#prev-button').css('visibility', 'visible');
+        if (currentIdx < jqCopyPreviewImage.length) {
+          jqCopyPreviewImage.hide();
+          $('#previewDiv').show();
+          _preview.showImage((currentIdx + 1));
+        }
+      },
+      closePreview: function () {
+        $('#previewDiv').hide();
+      },
+      fileDownload: function () {
+        if (_previewCurrentImage.canDownload) {
+          if (_previewCurrentImage.type === 'privacy') {
+            $('<a>').attr('href', 'url' + _previewCurrentImage.id).get(0).click();
+          } else {
+            $('<a>').attr('href', 'url' + _previewCurrentImage.id + '&no=' + _previewCurrentImage.no).get(0).click();
+          }
+        } else {
+          alert('다운로드 할수없는 파일입니다.');
+        }
+      },
+      showBigImage: function (cloneImage) {
+        $('.file-preview-big-layer-wrapper').css('display', "flex").show();
+        $('.file-preview-big-layer').html(cloneImage);
+      },
+      bigImageClose: function () {
+        $('#previewImageBigDiv').hide();
+      }
+    }
+  </script>
+</head>
+<body>
+<video controls width="500" height="500" autoplay muted>
+  <!--<source src="/Users/glenn_mac/Downloads/file_example_MP4_480_1_5MG.mp4" type="video/webm">-->
+  <source src="video/preview" type="video/mp4">
+  죄송합니다. 사용중인 브라우저는 비디오 미리보기를 지원하지 않습니다.
+</video>
+</body>
+</html>
